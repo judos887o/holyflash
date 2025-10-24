@@ -1,0 +1,12 @@
+-- Lokale Test‑Animation (FE-sicher, keine externen Calls)
+local player    = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid  = character:WaitForChild("Humanoid")
+
+local anim = Instance.new("Animation")
+anim.AnimationId = "rbxassetid://77840765435893"
+
+local track = humanoid:LoadAnimation(anim)
+track.Looped = true
+track.Priority = Enum.AnimationPriority.Action
+track:Play()
