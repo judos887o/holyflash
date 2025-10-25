@@ -1,12 +1,42 @@
--- Lokale Test‑Animation (FE-sicher, keine externen Calls)
-local player    = game.Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local humanoid  = character:WaitForChild("Humanoid")
+-- 🔁 Dauerhaft loopende Animation, auch nach Tod & Respawn (FE-sicher)
+local player = game.Players.LocalPlayer
 
-local anim = Instance.new("Animation")
-anim.AnimationId = "rbxassetid://77840765435893"
+-- Funktion zum Starten der Animation
+local function playLoopedAnimation(character)
+	-- Warte sicherheitshalber, bis alle Teile geladen sind
+	local humanoid = character:WaitForChild("Humanoid")
+	local hrp = character:WaitForChild("HumanoidRootPart")
 
-local track = humanoid:LoadAnimation(anim)
-track.Looped = true
-track.Priority = Enum.AnimationPriority.Action
-track:Play()
+	-- Erstelle & spiele die Animation
+	local anim = Instance.new("Animation")
+	anim.AnimationId = "rbxassetid://77840765435893"
+
+	local track = humanoid:LoadAnimation(anim)
+	track.Looped = true
+	track.Priority = Enum.AnimationPriority.Action
+	track:Play()
+
+	print("[Animation] Animation läuft für:", player.Name)
+
+	-- Wenn der Spieler stirbt → nach Respawn erneut starten
+	humanoid.Died:Connect(function()
+		print("[Animation] Spieler gestorben, warte auf Respawn...")
+	end)
+end
+
+-- Starte beim aktuellen Charakter
+if player.Character then
+	task.spawn(function()
+		playLoopedAnimation(player.Character)
+	end)
+end
+
+-- Wenn Charakter respawnt → warte, bis alles geladen ist, und starte erneut
+player.CharacterAdded:Connect(function(newChar)
+	task.defer(function()
+		newChar:WaitForChild("Humanoid")
+		newChar:WaitForChild("HumanoidRootPart")
+		task.wait(0.5) -- kleine Verzögerung, um Roblox Zeit zum Laden zu geben
+		playLoopedAnimation(newChar)
+	end)
+end)
