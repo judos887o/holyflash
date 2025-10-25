@@ -1,42 +1,85 @@
--- 🔁 Dauerhaft loopende Animation, auch nach Tod & Respawn (FE-sicher)
+-- 🌀 Dauerhafte loopende Animation mit GUI und Keybind (X)
+-- 💡 Von Filip Nikucic inspiriert
+
 local player = game.Players.LocalPlayer
+local UserInputService = game:GetService("UserInputService")
 
--- Funktion zum Starten der Animation
-local function playLoopedAnimation(character)
-	-- Warte sicherheitshalber, bis alle Teile geladen sind
+-- === GUI erstellen ===
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "AnimationGui"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+local button = Instance.new("TextButton")
+button.Size = UDim2.new(0, 220, 0, 50)
+button.Position = UDim2.new(1, -240, 0.75, 0) -- weiter unten (0.75 statt 0.55)
+button.AnchorPoint = Vector2.new(0, 0.5)
+button.Text = "Activate Animation (X)"
+button.Font = Enum.Font.GothamBold
+button.TextScaled = true
+button.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+button.TextColor3 = Color3.fromRGB(255, 255, 255)
+button.AutoButtonColor = true
+button.Parent = screenGui
+button.Active = true
+button.Visible = true
+button.ZIndex = 5
+button.BackgroundTransparency = 0.1
+button.BorderSizePixel = 0
+button.ClipsDescendants = true
+button.TextStrokeTransparency = 0.8
+button.TextWrapped = true
+
+-- === Animation Setup ===
+local animationId = "rbxassetid://77840765435893"
+local animationTrack
+local animationActive = false
+
+local function playAnimation(character)
 	local humanoid = character:WaitForChild("Humanoid")
-	local hrp = character:WaitForChild("HumanoidRootPart")
 
-	-- Erstelle & spiele die Animation
+	-- Falls alte Animation läuft, stoppen
+	if animationTrack then
+		animationTrack:Stop()
+	end
+
 	local anim = Instance.new("Animation")
-	anim.AnimationId = "rbxassetid://77840765435893"
+	anim.AnimationId = animationId
 
-	local track = humanoid:LoadAnimation(anim)
-	track.Looped = true
-	track.Priority = Enum.AnimationPriority.Action
-	track:Play()
+	animationTrack = humanoid:LoadAnimation(anim)
+	animationTrack.Looped = true
+	animationTrack.Priority = Enum.AnimationPriority.Action
+	animationTrack:Play()
+	animationActive = true
 
-	print("[Animation] Animation läuft für:", player.Name)
-
-	-- Wenn der Spieler stirbt → nach Respawn erneut starten
-	humanoid.Died:Connect(function()
-		print("[Animation] Spieler gestorben, warte auf Respawn...")
-	end)
+	print("[Animation] Animation aktiviert für:", player.Name)
 end
 
--- Starte beim aktuellen Charakter
-if player.Character then
-	task.spawn(function()
-		playLoopedAnimation(player.Character)
-	end)
+-- === Respawn-Handling ===
+player.CharacterAdded:Connect(function(char)
+	char:WaitForChild("Humanoid")
+	char:WaitForChild("HumanoidRootPart")
+	task.wait(0.5)
+	if animationActive then
+		playAnimation(char)
+	end
+end)
+
+-- === Steuerung ===
+local function activateAnimation()
+	local character = player.Character or player.CharacterAdded:Wait()
+	playAnimation(character)
 end
 
--- Wenn Charakter respawnt → warte, bis alles geladen ist, und starte erneut
-player.CharacterAdded:Connect(function(newChar)
-	task.defer(function()
-		newChar:WaitForChild("Humanoid")
-		newChar:WaitForChild("HumanoidRootPart")
-		task.wait(0.5) -- kleine Verzögerung, um Roblox Zeit zum Laden zu geben
-		playLoopedAnimation(newChar)
-	end)
+-- Klick auf Button
+button.MouseButton1Click:Connect(function()
+	activateAnimation()
+end)
+
+-- Tastendruck X
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+	if input.KeyCode == Enum.KeyCode.X then
+		activateAnimation()
+	end
 end)
