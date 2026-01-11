@@ -1,5 +1,4 @@
 -- 🌀 Dauerhafte loopende Animation mit GUI und Keybind (X)
--- 💡 Von Filip Nikucic inspiriert
 
 local player = game.Players.LocalPlayer
 local UserInputService = game:GetService("UserInputService")
